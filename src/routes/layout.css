@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+@theme {
+	--color-brand-light: #efebe2;
+	--color-brand-dark: #525344;
+	--color-brand-light-100: #f7f5f0;
+	--color-brand-dark-900: #38392f;
+
+	/* Gold from the logo. Three steps, because one cannot do every job:
+     - gold      identity fill only (marks, dots, chart slices). 4.13:1 on white,
+                 fine for a large mark, NOT for text.
+     - gold-700  gold text, links and button fills on light. 5.18:1 on white,
+                 4.75:1 on the page background, and white on it is 5.18:1.
+     - gold-800  hover/pressed for those.
+     - gold-300  gold on the dark sidebar. The plain gold sits at 1.90:1 there,
+                 which is why the old sidebar title was so hard to read. */
+	--color-brand-gold: #947a2c;
+	--color-brand-gold-700: #836a26;
+	--color-brand-gold-800: #6e5a1f;
+	--color-brand-gold-300: #e3ce9b;
+}
+
+@layer base {
+	body {
+		@apply bg-brand-light-100 text-brand-dark antialiased;
+	}
+}
