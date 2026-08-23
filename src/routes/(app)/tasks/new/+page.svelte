@@ -18,8 +18,8 @@
 			<ArrowLeft class="h-5 w-5" />
 		</a>
 		<div>
-			<h1 class="text-3xl font-bold text-brand-dark">Create New Task</h1>
-			<p class="mt-1 text-gray-500">Assign a new task to a department or team member.</p>
+			<h1 class="text-2xl font-bold text-brand-dark">New task</h1>
+			<p class="mt-0.5 text-sm text-gray-500">Assign work to a department or team member.</p>
 		</div>
 	</div>
 

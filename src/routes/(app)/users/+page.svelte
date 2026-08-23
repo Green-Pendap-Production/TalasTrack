@@ -10,6 +10,7 @@
 	let saving = $state(false);
 	let error = $state('');
 	let notice = $state('');
+	let showAdd = $state(false);
 
 	let name = $state('');
 	let email = $state('');
@@ -70,6 +71,7 @@
 			});
 			users = [...users, created].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 			notice = `${name || email} can now sign in.`;
+			showAdd = false;
 			name = '';
 			email = '';
 			password = '';
@@ -171,89 +173,109 @@
 			Only directors can manage members.
 		</div>
 	{:else}
-		<form
-			onsubmit={add}
-			class="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-6"
-		>
-			<div>
-				<label for="name" class="mb-1.5 block text-xs font-medium text-gray-500">Name</label>
-				<input
-					id="name"
-					bind:value={name}
-					required
-					placeholder="Jane Doe"
-					class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-				/>
-			</div>
-			<div>
-				<label for="email" class="mb-1.5 block text-xs font-medium text-gray-500">Email</label>
-				<input
-					id="email"
-					type="email"
-					bind:value={email}
-					required
-					placeholder="jane@company.com"
-					class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-				/>
-			</div>
-			<div>
-				<label for="password" class="mb-1.5 block text-xs font-medium text-gray-500">
-					Temporary password
-				</label>
-				<input
-					id="password"
-					type="password"
-					bind:value={password}
-					required
-					minlength="8"
-					placeholder="At least 8 characters"
-					class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-				/>
-			</div>
-			<div>
-				<label for="role" class="mb-1.5 block text-xs font-medium text-gray-500">Role</label>
-				<select
-					id="role"
-					bind:value={role}
-					class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-				>
-					{#each roles as r}
-						<option value={r}>{r}</option>
-					{/each}
-				</select>
-			</div>
-			{#if hasDepartmentField}
-				<div>
-					<label for="dept" class="mb-1.5 block text-xs font-medium text-gray-500">Department</label
-					>
-					<select
-						id="dept"
-						bind:value={departmentId}
-						class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-					>
-						<option value="">No department</option>
-						{#each departments as d}
-							<option value={d.id}>{d.name}</option>
-						{/each}
-					</select>
-				</div>
-			{/if}
+		<div class="flex justify-end">
+			<button
+				onclick={() => (showAdd = !showAdd)}
+				class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-gold-700 px-4 text-sm font-medium text-white transition-colors hover:bg-brand-gold-800"
+			>
+				<UserPlus class="h-4 w-4" />
+				{showAdd ? 'Close' : 'Add member'}
+			</button>
+		</div>
 
-			<div class="flex items-end">
-				<button
-					type="submit"
-					disabled={saving}
-					class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-gold-700 px-4 text-sm font-medium text-white transition-colors hover:bg-brand-gold-800 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{#if saving}
-						<Loader2 class="h-4 w-4 animate-spin" />
-					{:else}
-						<UserPlus class="h-4 w-4" />
+		{#if showAdd}
+			<form onsubmit={add} class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+				<h2 class="mb-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+					New member
+				</h2>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<div>
+						<label for="name" class="mb-1.5 block text-xs font-medium text-gray-500">Name</label>
+						<input
+							id="name"
+							bind:value={name}
+							required
+							placeholder="Jane Doe"
+							class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+						/>
+					</div>
+					<div>
+						<label for="email" class="mb-1.5 block text-xs font-medium text-gray-500">Email</label>
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							required
+							placeholder="jane@company.com"
+							class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+						/>
+					</div>
+					<div>
+						<label for="password" class="mb-1.5 block text-xs font-medium text-gray-500">
+							Temporary password
+						</label>
+						<input
+							id="password"
+							type="password"
+							bind:value={password}
+							required
+							minlength="8"
+							placeholder="At least 8 characters"
+							class="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+						/>
+					</div>
+					<div>
+						<label for="role" class="mb-1.5 block text-xs font-medium text-gray-500">Role</label>
+						<select
+							id="role"
+							bind:value={role}
+							class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+						>
+							{#each roles as r}
+								<option value={r}>{r}</option>
+							{/each}
+						</select>
+					</div>
+					{#if hasDepartmentField}
+						<div>
+							<label for="dept" class="mb-1.5 block text-xs font-medium text-gray-500"
+								>Department</label
+							>
+							<select
+								id="dept"
+								bind:value={departmentId}
+								class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+							>
+								<option value="">No department</option>
+								{#each departments as d}
+									<option value={d.id}>{d.name}</option>
+								{/each}
+							</select>
+						</div>
 					{/if}
-					Add member
-				</button>
-			</div>
-		</form>
+				</div>
+
+				<div class="mt-5 flex justify-end gap-3 border-t border-gray-100 pt-5">
+					<button
+						type="button"
+						onclick={() => (showAdd = false)}
+						class="h-10 rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={saving}
+						class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-gold-700 px-5 text-sm font-medium text-white transition-colors hover:bg-brand-gold-800 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{#if saving}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{/if}
+						Create member
+					</button>
+				</div>
+			</form>
+		{/if}
 
 		<div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
 			{#if loading}
@@ -262,70 +284,88 @@
 				<p class="p-8 text-center text-gray-500">No members yet.</p>
 			{:else}
 				<ul class="divide-y divide-gray-100">
-					{#each users as u}
-						<li class="flex flex-wrap items-center gap-3 px-4 py-3">
-							<div
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-light text-sm font-bold text-brand-gold-800"
-							>
-								{(u.name || u.email || '?').charAt(0).toUpperCase()}
-							</div>
-
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-brand-dark">
-									{u.name || 'No name'}
-									{#if u.id === me?.id}
-										<span class="ml-1 text-xs font-normal text-gray-400">(you)</span>
-									{/if}
-								</p>
-								<p class="truncate text-xs text-gray-500">{u.email || 'email hidden'}</p>
-							</div>
-
-							<span class="shrink-0 text-xs text-gray-400">
-								{taskCounts[u.id] ?? 0} tasks
-							</span>
-
-							{#if hasDepartmentField}
-								<select
-									value={u.department ?? ''}
-									onchange={(e) => changeDepartment(u, e.currentTarget.value)}
-									aria-label={`Department for ${u.name || u.email}`}
-									class="h-9 shrink-0 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+					{#each users as u (u.id)}
+						<li
+							class="grid grid-cols-1 items-center gap-3 px-5 py-4 transition-colors hover:bg-brand-light-100/50 sm:grid-cols-[minmax(0,1fr)_auto]"
+						>
+							<div class="flex min-w-0 items-center gap-3">
+								<div
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-light text-sm font-bold text-brand-gold-800"
 								>
-									<option value="">No department</option>
-									{#each departments as d}
-										<option value={d.id}>{d.name}</option>
+									{(u.name || u.email || '?').charAt(0).toUpperCase()}
+								</div>
+
+								<div class="min-w-0">
+									<p class="flex items-center gap-2 text-sm font-medium text-brand-dark">
+										<span class="truncate">{u.name || 'No name'}</span>
+										{#if u.role === 'director'}
+											<span
+												class="shrink-0 rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-medium text-brand-gold-800"
+											>
+												Director
+											</span>
+										{/if}
+										{#if u.id === me?.id}
+											<span class="shrink-0 text-xs font-normal text-gray-400">you</span>
+										{/if}
+									</p>
+									<p class="mt-0.5 truncate text-xs text-gray-500">
+										{u.email || 'email hidden'}
+										<span class="text-gray-300">&middot;</span>
+										{taskCounts[u.id] ?? 0} tasks
+									</p>
+								</div>
+							</div>
+
+							<!-- Controls sit in their own group, so rows line up column-wise
+							     instead of every row wrapping at a different point. -->
+							<div class="flex items-center gap-2 pl-13 sm:pl-0">
+								{#if hasDepartmentField}
+									<select
+										value={u.department ?? ''}
+										onchange={(e) => changeDepartment(u, e.currentTarget.value)}
+										aria-label={`Department for ${u.name || u.email}`}
+										class="h-9 w-32 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+									>
+										<option value="">No department</option>
+										{#each departments as d}
+											<option value={d.id}>{d.name}</option>
+										{/each}
+									</select>
+								{/if}
+
+								<select
+									value={u.role ?? ''}
+									onchange={(e) => changeRole(u, e.currentTarget.value)}
+									aria-label={`Role for ${u.name || u.email}`}
+									class="h-9 w-28 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 capitalize focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+								>
+									{#each roles as r}
+										<option value={r}>{r}</option>
 									{/each}
 								</select>
-							{/if}
 
-							<select
-								value={u.role ?? ''}
-								onchange={(e) => changeRole(u, e.currentTarget.value)}
-								aria-label={`Role for ${u.name || u.email}`}
-								class="h-9 shrink-0 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
-							>
-								{#each roles as r}
-									<option value={r}>{r}</option>
-								{/each}
-							</select>
+								<div class="ml-1 flex items-center gap-1 border-l border-gray-100 pl-2">
+									<button
+										onclick={() => resetPassword(u)}
+										aria-label={`Send password reset to ${u.email}`}
+										title="Send password reset email"
+										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-brand-dark"
+									>
+										<KeyRound class="h-4 w-4" />
+									</button>
 
-							<button
-								onclick={() => resetPassword(u)}
-								aria-label={`Send password reset to ${u.email}`}
-								title="Send password reset email"
-								class="shrink-0 rounded-lg border border-transparent p-2 text-gray-400 transition-colors hover:border-gray-200 hover:bg-gray-50 hover:text-brand-dark"
-							>
-								<KeyRound class="h-4 w-4" />
-							</button>
-
-							<button
-								onclick={() => remove(u)}
-								disabled={u.id === me?.id}
-								aria-label={`Delete ${u.name || u.email}`}
-								class="shrink-0 rounded-lg border border-transparent p-2 text-gray-400 transition-colors hover:border-red-100 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-transparent disabled:hover:bg-transparent disabled:hover:text-gray-400"
-							>
-								<Trash2 class="h-4 w-4" />
-							</button>
+									<button
+										onclick={() => remove(u)}
+										disabled={u.id === me?.id}
+										aria-label={`Delete ${u.name || u.email}`}
+										title={u.id === me?.id ? 'You cannot delete yourself' : 'Delete member'}
+										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+									>
+										<Trash2 class="h-4 w-4" />
+									</button>
+								</div>
+							</div>
 						</li>
 					{/each}
 				</ul>
