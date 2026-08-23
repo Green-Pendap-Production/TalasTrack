@@ -54,6 +54,12 @@
 	]);
 </script>
 
+<!-- Everything in this group sits behind the login. Nothing here should ever
+     reach an index, and one tag on the group layout covers every page in it. -->
+<svelte:head>
+	<meta name="robots" content="noindex, nofollow" />
+</svelte:head>
+
 {#if user}
 	<div class="flex h-screen overflow-hidden bg-brand-light-100">
 		<!-- Mobile sidebar toggle -->

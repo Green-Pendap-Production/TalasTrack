@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { pb, pbError } from '$lib/pocketbase';
 	import { tally } from '$lib/polls';
+	import Seo from '$lib/Seo.svelte';
 	import PollResults from '$lib/PollResults.svelte';
 	import TurnoutRing from '$lib/TurnoutRing.svelte';
 	import { onMount } from 'svelte';
@@ -16,6 +17,7 @@
 	let selectedOption = $state('');
 	let submitting = $state(false);
 	let error = $state('');
+	let realtime = $state(true);
 
 	let user = pb.authStore.model;
 
@@ -29,15 +31,25 @@
 
 	onMount(() => {
 		load();
-		// Live results — pocketbase gives this for free, no polling loop to own.
+		// Live results - pocketbase gives this for free, no polling loop to own.
 		let unsub: (() => void) | undefined;
 		pb.collection('votes')
 			.subscribe('*', (e) => {
 				if (e.record.poll === pollId) loadVotes();
 			})
 			.then((fn) => (unsub = fn))
-			.catch(() => {}); // realtime blocked by API rules: results just won't auto-refresh
-		return () => unsub?.();
+			.catch(() => (realtime = false)); // API rules, or a proxy that eats SSE
+
+		// Realtime rides on a long-lived SSE connection, which proxies and CDNs
+		// like to buffer or time out. Refetching when the tab regains focus keeps
+		// the tally honest wherever that connection does not survive.
+		const refresh = () => loadVotes();
+		window.addEventListener('focus', refresh);
+
+		return () => {
+			unsub?.();
+			window.removeEventListener('focus', refresh);
+		};
 	});
 
 	async function load() {
@@ -99,9 +111,11 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{poll?.title || 'Vote'} | TalasTrack</title>
-</svelte:head>
+<Seo
+	title={poll?.title || 'Vote'}
+	description={poll?.description || 'Cast your vote on this proposal.'}
+	type="article"
+/>
 
 <div
 	class="flex min-h-screen flex-col items-center justify-center bg-brand-light-100 px-4 py-12 sm:px-6 lg:px-8"
@@ -203,6 +217,12 @@
 							{votedIds}
 							myOption={myVote?.option ?? ''}
 						/>
+
+						{#if !realtime}
+							<p class="mt-6 text-center text-xs text-gray-400">
+								Live updates unavailable - figures refresh when you return to this tab.
+							</p>
+						{/if}
 					{:else if !poll.is_open}
 						<div class="py-8 text-center">
 							<h3 class="mb-2 text-xl font-bold text-gray-900">This poll is closed</h3>

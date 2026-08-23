@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { User, Lock, Loader2 } from 'lucide-svelte';
+	import Seo from '$lib/Seo.svelte';
 
 	// Only ever follow an in-app path, so a crafted ?redirect= can't bounce
 	// someone off-site straight after they hand over a password.
@@ -31,6 +32,11 @@
 		}
 	}
 </script>
+
+<Seo
+	title="Sign in"
+	description="TalasTrack - task tracking and team voting for Green Pendap. Sign in to manage your tasks."
+/>
 
 <div class="flex min-h-screen items-center justify-center bg-brand-light-100 p-4">
 	<div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
