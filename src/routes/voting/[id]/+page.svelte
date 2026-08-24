@@ -6,7 +6,7 @@
 	import PollResults from '$lib/PollResults.svelte';
 	import TurnoutRing from '$lib/TurnoutRing.svelte';
 	import { onMount } from 'svelte';
-	import { Check, Vote, ArrowLeft, Lock, LockOpen, Trophy } from 'lucide-svelte';
+	import { Check, Vote, ArrowLeft, Lock, LockOpen, Trophy, MonitorPlay } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 
 	let pollId = $page.params.id!;
@@ -137,17 +137,31 @@
 				>
 					Sign in to vote
 				</a>
-			{:else if isDirector && poll}
-				<button
-					onclick={togglePoll}
-					class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-brand-dark"
-				>
-					{#if poll.is_open}
-						<Lock class="h-4 w-4" /> Close poll
-					{:else}
-						<LockOpen class="h-4 w-4" /> Reopen poll
+			{:else if poll}
+				<div class="flex items-center gap-2">
+					<!-- Opens in its own tab: the presenter screen belongs on the projector,
+					     this one stays on the laptop. -->
+					<a
+						href={`/voting/${pollId}/present`}
+						target="_blank"
+						rel="noopener"
+						class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-brand-dark"
+					>
+						<MonitorPlay class="h-4 w-4" /> Present
+					</a>
+					{#if isDirector}
+						<button
+							onclick={togglePoll}
+							class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-brand-dark"
+						>
+							{#if poll.is_open}
+								<Lock class="h-4 w-4" /> Close poll
+							{:else}
+								<LockOpen class="h-4 w-4" /> Reopen poll
+							{/if}
+						</button>
 					{/if}
-				</button>
+				</div>
 			{/if}
 		</div>
 
