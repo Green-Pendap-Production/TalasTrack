@@ -2,6 +2,7 @@
 	import { pb, pbError } from '$lib/pocketbase';
 	import { onMount } from 'svelte';
 	import { UserPlus, Trash2, Loader2, KeyRound, Check } from 'lucide-svelte';
+	import Avatar from '$lib/Avatar.svelte';
 
 	let users = $state<any[]>([]);
 	let departments = $state<any[]>([]);
@@ -289,11 +290,7 @@
 							class="grid grid-cols-1 items-center gap-3 px-5 py-4 transition-colors hover:bg-brand-light-100/50 sm:grid-cols-[minmax(0,1fr)_auto]"
 						>
 							<div class="flex min-w-0 items-center gap-3">
-								<div
-									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-light text-sm font-bold text-brand-gold-800"
-								>
-									{(u.name || u.email || '?').charAt(0).toUpperCase()}
-								</div>
+								<Avatar user={u} size="lg" />
 
 								<div class="min-w-0">
 									<p class="flex items-center gap-2 text-sm font-medium text-brand-dark">
@@ -319,13 +316,13 @@
 
 							<!-- Controls sit in their own group, so rows line up column-wise
 							     instead of every row wrapping at a different point. -->
-							<div class="flex items-center gap-2 pl-13 sm:pl-0">
+							<div class="flex flex-wrap items-center gap-2 pl-13 sm:flex-nowrap sm:pl-0">
 								{#if hasDepartmentField}
 									<select
 										value={u.department ?? ''}
 										onchange={(e) => changeDepartment(u, e.currentTarget.value)}
 										aria-label={`Department for ${u.name || u.email}`}
-										class="h-9 w-32 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+										class="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none sm:h-9 sm:w-32 sm:flex-none"
 									>
 										<option value="">No department</option>
 										{#each departments as d}
@@ -338,7 +335,7 @@
 									value={u.role ?? ''}
 									onchange={(e) => changeRole(u, e.currentTarget.value)}
 									aria-label={`Role for ${u.name || u.email}`}
-									class="h-9 w-28 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 capitalize focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none"
+									class="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-600 capitalize focus:border-transparent focus:ring-2 focus:ring-brand-gold-700 focus:outline-none sm:h-9 sm:w-28 sm:flex-none"
 								>
 									{#each roles as r}
 										<option value={r}>{r}</option>
@@ -350,7 +347,7 @@
 										onclick={() => resetPassword(u)}
 										aria-label={`Send password reset to ${u.email}`}
 										title="Send password reset email"
-										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-brand-dark"
+										class="rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-brand-dark sm:p-2"
 									>
 										<KeyRound class="h-4 w-4" />
 									</button>
@@ -360,7 +357,7 @@
 										disabled={u.id === me?.id}
 										aria-label={`Delete ${u.name || u.email}`}
 										title={u.id === me?.id ? 'You cannot delete yourself' : 'Delete member'}
-										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+										class="rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 sm:p-2"
 									>
 										<Trash2 class="h-4 w-4" />
 									</button>

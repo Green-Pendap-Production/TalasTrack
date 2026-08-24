@@ -2,6 +2,8 @@
 	import { pb } from '$lib/pocketbase';
 	import { onMount } from 'svelte';
 	import { CheckSquare, Vote, Clock, AlertTriangle } from 'lucide-svelte';
+	import { projectScope, projectName } from '$lib/projects.svelte';
+	import { inScope, ALL_PROJECTS, NO_PROJECT } from '$lib/projects';
 
 	let user = pb.authStore.model;
 
@@ -15,9 +17,23 @@
 	const inSevenDays = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
 
 	// One fetch of my open work, then every number on this page is counted from it.
-	let overdue = $derived(myTasks.filter((t) => t.due_date && new Date(t.due_date) < startOfToday));
+	// The sidebar switcher narrows that set - counting the unscoped list would
+	// contradict the project you are looking at.
+	let scopedTasks = $derived(
+		projectScope.available ? myTasks.filter((t) => inScope(t, projectScope.id)) : myTasks
+	);
+	let scopeLabel = $derived(
+		!projectScope.available || projectScope.id === ALL_PROJECTS
+			? ''
+			: projectScope.id === NO_PROJECT
+				? ' outside any project'
+				: ` in ${projectName(projectScope.id)}`
+	);
+	let overdue = $derived(
+		scopedTasks.filter((t) => t.due_date && new Date(t.due_date) < startOfToday)
+	);
 	let dueSoon = $derived(
-		myTasks.filter(
+		scopedTasks.filter(
 			(t) =>
 				t.due_date && new Date(t.due_date) >= startOfToday && new Date(t.due_date) <= inSevenDays
 		)
@@ -35,7 +51,7 @@
 			myTasks = await pb.collection('tasks').getFullList({
 				filter: `assignees ~ "${user.id}" && status != "done"`,
 				sort: 'due_date',
-				expand: 'department'
+				expand: 'department,project'
 			});
 			openPolls = await pb
 				.collection('polls')
@@ -78,8 +94,8 @@
 		>
 			<div class="flex items-center justify-between">
 				<div>
-					<p class="mb-1 text-sm font-medium text-gray-500">My Active Tasks</p>
-					<h3 class="text-3xl font-bold text-brand-dark">{myTasks.length}</h3>
+					<p class="mb-1 text-sm font-medium text-gray-500">My Active Tasks{scopeLabel}</p>
+					<h3 class="text-3xl font-bold text-brand-dark">{scopedTasks.length}</h3>
 				</div>
 				<div
 					class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600"

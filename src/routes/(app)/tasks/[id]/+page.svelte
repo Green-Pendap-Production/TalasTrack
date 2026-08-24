@@ -2,13 +2,16 @@
 	import { page } from '$app/stores';
 	import { pb, pbError } from '$lib/pocketbase';
 	import TaskForm from '$lib/TaskForm.svelte';
+	import Avatar from '$lib/Avatar.svelte';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { projectScope } from '$lib/projects.svelte';
 	import {
 		ArrowLeft,
 		Clock,
 		User,
 		Building,
+		FolderKanban,
 		CheckCircle2,
 		Circle,
 		Pencil,
@@ -34,7 +37,7 @@
 		try {
 			task = await pb
 				.collection('tasks')
-				.getOne(taskId, { expand: 'assignees,department,created_by' });
+				.getOne(taskId, { expand: 'assignees,department,project,created_by' });
 		} catch (e) {
 			console.error(e);
 		} finally {
@@ -249,8 +252,9 @@
 									{#if task.expand?.assignees && task.expand.assignees.length > 0}
 										{#each task.expand.assignees as assignee}
 											<span
-												class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800"
+												class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-0.5 pr-2.5 pl-0.5 text-xs font-medium text-gray-800"
 											>
+												<Avatar user={assignee} size="xs" class="bg-white text-gray-500" />
 												{assignee.name}
 											</span>
 										{/each}
@@ -260,6 +264,18 @@
 								</div>
 							</div>
 						</li>
+
+						{#if projectScope.available}
+							<li class="flex items-start gap-3">
+								<FolderKanban class="mt-0.5 h-5 w-5 text-gray-400" />
+								<div>
+									<p class="text-sm font-medium text-gray-500">Project</p>
+									<p class="font-medium text-brand-dark">
+										{task.expand?.project?.name || 'No project'}
+									</p>
+								</div>
+							</li>
+						{/if}
 
 						<li class="flex items-start gap-3">
 							<Building class="mt-0.5 h-5 w-5 text-gray-400" />

@@ -38,7 +38,7 @@
 	description="TalasTrack - task tracking and team voting for Green Pendap. Sign in to manage your tasks."
 />
 
-<div class="flex min-h-screen items-center justify-center bg-brand-light-100 p-4">
+<div class="flex min-h-dvh items-center justify-center bg-brand-light-100 p-4">
 	<div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
 		<div class="border-b border-gray-100 bg-brand-light px-6 py-8 text-center">
 			<img src="/logo.svg" alt="TrackMyPendap" class="mx-auto h-14 w-auto" />

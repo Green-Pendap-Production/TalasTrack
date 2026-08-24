@@ -2,6 +2,9 @@
 	import { pb, pbError } from '$lib/pocketbase';
 	import { onMount } from 'svelte';
 	import { timelineRange, spanPercent, ticks } from '$lib/timeline';
+	import Avatar from '$lib/Avatar.svelte';
+	import { projectScope, projectName } from '$lib/projects.svelte';
+	import { inScope, ALL_PROJECTS, NO_PROJECT } from '$lib/projects';
 	import {
 		Plus,
 		Search,
@@ -33,6 +36,16 @@
 
 	let user = pb.authStore.model;
 
+	// Rows only need a project tag when the view mixes several of them.
+	let showProjectTag = $derived(projectScope.available && projectScope.id === ALL_PROJECTS);
+	let scopeLabel = $derived(
+		!projectScope.available || projectScope.id === ALL_PROJECTS
+			? 'Manage and track departmental tasks.'
+			: projectScope.id === NO_PROJECT
+				? 'Tasks not filed under any project.'
+				: `Tasks in ${projectName(projectScope.id)}.`
+	);
+
 	onMount(fetchTasks);
 
 	async function fetchTasks() {
@@ -40,7 +53,7 @@
 		try {
 			tasks = await pb
 				.collection('tasks')
-				.getFullList({ sort: '-created', expand: 'assignees,department' });
+				.getFullList({ sort: '-created', expand: 'assignees,department,project' });
 			departments = await pb.collection('departments').getFullList({ sort: 'name' });
 		} catch (e: any) {
 			// A refused request is not an empty list - say which one it was.
@@ -55,6 +68,7 @@
 
 	let filteredTasks = $derived(
 		tasks.filter((task) => {
+			if (projectScope.available && !inScope(task, projectScope.id)) return false;
 			const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
 			const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
 			const matchesMine = !mineOnly || (task.assignees ?? []).includes(user?.id);
@@ -66,8 +80,10 @@
 	);
 
 	// Counts ignore the department filter itself, so every row keeps its own total.
+	// They do respect the project, which is the scope of the whole page.
 	let scoped = $derived(
 		tasks.filter((task) => {
+			if (projectScope.available && !inScope(task, projectScope.id)) return false;
 			const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
 			const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
 			const matchesMine = !mineOnly || (task.assignees ?? []).includes(user?.id);
@@ -175,7 +191,7 @@
 	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
 			<h1 class="text-2xl font-bold text-brand-dark">Tasks</h1>
-			<p class="mt-0.5 text-sm text-gray-500">Manage and track departmental tasks.</p>
+			<p class="mt-0.5 text-sm text-gray-500">{scopeLabel}</p>
 		</div>
 		<div class="flex items-center gap-3">
 			<div class="inline-flex rounded-lg border border-gray-200 bg-white p-1">
@@ -218,20 +234,26 @@
 	<div class="flex flex-col items-start gap-6 md:flex-row">
 		<!-- Department picker. Same markup both ways: a scrolling row on phones,
          a sidebar from md up. -->
-		<aside class="w-full shrink-0 rounded-xl border border-gray-100 bg-white p-2 shadow-sm md:w-56">
+		<aside
+			class="-mx-4 w-[calc(100%+2rem)] shrink-0 border-y border-gray-100 bg-white px-4 py-2 shadow-sm md:mx-0 md:w-56 md:rounded-xl md:border md:p-2"
+		>
 			<p
 				class="hidden px-3 pt-2 pb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase md:block"
 			>
 				Departments
 			</p>
-			<div class="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+			<!-- Full-bleed on phones so the strip scrolls to the screen edge instead
+			     of being clipped mid-chip by the card padding. -->
+			<div
+				class="flex snap-x snap-mandatory [scrollbar-width:none] gap-1 overflow-x-auto md:flex-col md:overflow-visible [&::-webkit-scrollbar]:hidden"
+			>
 				{#each [{ id: 'all', name: 'All departments' }, ...departments, { id: 'none', name: 'No department' }] as dept}
 					<button
 						onclick={() => (departmentFilter = dept.id)}
-						class={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors md:w-full ${
+						class={`flex shrink-0 snap-start items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm whitespace-nowrap transition-colors md:w-full md:shrink md:border-transparent ${
 							departmentFilter === dept.id
-								? 'bg-brand-light-100 font-medium text-brand-dark'
-								: 'text-gray-600 hover:bg-gray-50'
+								? 'border-brand-gold-700 bg-brand-light-100 font-medium text-brand-dark md:border-transparent'
+								: 'border-gray-200 text-gray-600 hover:bg-gray-50'
 						}`}
 					>
 						<span class="truncate">{dept.name}</span>
@@ -297,69 +319,80 @@
 					{#if bars.length === 0}
 						<p class="p-8 text-center text-gray-500">No tasks to place on the timeline.</p>
 					{:else}
-						<!-- Axis. Ticks are evenly spaced across the window, not per-day, so
+						<!-- A gantt needs width. Scroll it sideways rather than squeeze the
+						     bars into nothing on a phone. -->
+						<div class="overflow-x-auto">
+							<div class="min-w-[640px]">
+								<!-- Axis. Ticks are evenly spaced across the window, not per-day, so
 						     the header stays readable whatever the range turns out to be. -->
-						<div class="flex border-b border-gray-100 bg-gray-50/60 text-xs text-gray-500">
-							<div class="w-44 shrink-0 px-4 py-2 font-medium">Task</div>
-							<div class="relative flex-1 py-2">
-								{#each ticks(range) as tick}
-									<span
-										class="absolute -translate-x-1/2 whitespace-nowrap"
-										style={`left:${tick.pct}%`}
-									>
-										{tick.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-									</span>
-								{/each}
+								<div class="flex border-b border-gray-100 bg-gray-50/60 text-xs text-gray-500">
+									<div class="w-44 shrink-0 px-4 py-2 font-medium">Task</div>
+									<div class="relative flex-1 py-2">
+										{#each ticks(range) as tick}
+											<span
+												class="absolute -translate-x-1/2 whitespace-nowrap"
+												style={`left:${tick.pct}%`}
+											>
+												{tick.date.toLocaleDateString(undefined, {
+													month: 'short',
+													day: 'numeric'
+												})}
+											</span>
+										{/each}
+									</div>
+									<div class="w-4 shrink-0"></div>
+								</div>
+
+								<ul class="divide-y divide-gray-50">
+									{#each bars as bar (bar.task.id)}
+										<li>
+											<a
+												href={`/tasks/${bar.task.id}`}
+												class="flex items-center transition-colors hover:bg-brand-light-100/60"
+											>
+												<div class="w-44 shrink-0 px-4 py-3">
+													<p class="truncate text-sm font-medium text-brand-dark">
+														{bar.task.title}
+													</p>
+													<p class="truncate text-xs text-gray-500">
+														{bar.task.expand?.department?.name || 'No department'}
+													</p>
+												</div>
+
+												<div class="relative flex-1 py-3">
+													{#each ticks(range) as tick}
+														<span
+															class="absolute inset-y-0 w-px bg-gray-100"
+															style={`left:${tick.pct}%`}
+														></span>
+													{/each}
+													{#if todayPct >= 0 && todayPct <= 100}
+														<span
+															class="absolute inset-y-0 w-px bg-red-400/70"
+															style={`left:${todayPct}%`}
+														></span>
+													{/if}
+													<div
+														title={`${bar.task.title} - due ${bar.task.due_date ? new Date(bar.task.due_date).toLocaleDateString() : 'not set'}`}
+														class={`relative h-5 rounded-full ${
+															bar.task.status === 'done'
+																? 'bg-green-500/80'
+																: isOverdue(bar.task)
+																	? 'bg-red-500/80'
+																	: bar.task.status === 'in_progress'
+																		? 'bg-brand-gold'
+																		: 'bg-brand-dark/40'
+														}`}
+														style={`margin-left:${bar.left}%;width:${bar.width}%`}
+													></div>
+												</div>
+												<div class="w-4 shrink-0"></div>
+											</a>
+										</li>
+									{/each}
+								</ul>
 							</div>
-							<div class="w-4 shrink-0"></div>
 						</div>
-
-						<ul class="divide-y divide-gray-50">
-							{#each bars as bar (bar.task.id)}
-								<li>
-									<a
-										href={`/tasks/${bar.task.id}`}
-										class="flex items-center transition-colors hover:bg-brand-light-100/60"
-									>
-										<div class="w-44 shrink-0 px-4 py-3">
-											<p class="truncate text-sm font-medium text-brand-dark">{bar.task.title}</p>
-											<p class="truncate text-xs text-gray-500">
-												{bar.task.expand?.department?.name || 'No department'}
-											</p>
-										</div>
-
-										<div class="relative flex-1 py-3">
-											{#each ticks(range) as tick}
-												<span
-													class="absolute inset-y-0 w-px bg-gray-100"
-													style={`left:${tick.pct}%`}
-												></span>
-											{/each}
-											{#if todayPct >= 0 && todayPct <= 100}
-												<span
-													class="absolute inset-y-0 w-px bg-red-400/70"
-													style={`left:${todayPct}%`}
-												></span>
-											{/if}
-											<div
-												title={`${bar.task.title} - due ${bar.task.due_date ? new Date(bar.task.due_date).toLocaleDateString() : 'not set'}`}
-												class={`relative h-5 rounded-full ${
-													bar.task.status === 'done'
-														? 'bg-green-500/80'
-														: isOverdue(bar.task)
-															? 'bg-red-500/80'
-															: bar.task.status === 'in_progress'
-																? 'bg-brand-gold'
-																: 'bg-brand-dark/40'
-												}`}
-												style={`margin-left:${bar.left}%;width:${bar.width}%`}
-											></div>
-										</div>
-										<div class="w-4 shrink-0"></div>
-									</a>
-								</li>
-							{/each}
-						</ul>
 
 						<div
 							class="flex flex-wrap items-center gap-4 border-t border-gray-100 px-4 py-3 text-xs text-gray-500"
@@ -383,6 +416,11 @@
 					{/if}
 				</div>
 			{:else if view === 'board'}
+				<!-- HTML5 drag-and-drop does not fire on touch, so the board is
+				     read-only on phones. Point at the way that does work there. -->
+				<p class="mb-3 text-xs text-gray-500 md:hidden">
+					Open a task to change its status - dragging needs a mouse.
+				</p>
 				<div class="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
 					{#each COLUMNS as col}
 						{@const items = filteredTasks.filter((t) => t.status === col.id)}
@@ -412,6 +450,12 @@
 									>
 										<p class="mb-2 font-medium text-brand-dark">{task.title}</p>
 										<div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+											{#if showProjectTag && task.expand?.project?.name}
+												<span
+													class="rounded bg-brand-light-100 px-2 py-0.5 font-medium text-brand-gold-800"
+													>{task.expand.project.name}</span
+												>
+											{/if}
 											{#if task.expand?.department?.name}
 												<span class="rounded bg-gray-100 px-2 py-0.5 text-gray-800"
 													>{task.expand.department.name}</span
@@ -429,11 +473,8 @@
 										{#if task.expand?.assignees?.length}
 											<div class="mt-3 flex -space-x-2">
 												{#each task.expand.assignees.slice(0, 4) as a}
-													<span
-														title={a.name}
-														class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-brand-dark text-xs font-bold text-brand-gold-700"
-													>
-														{a.name?.charAt(0) || '?'}
+													<span title={a.name} class="rounded-full ring-2 ring-white">
+														<Avatar user={a} size="sm" class="bg-brand-dark text-brand-gold-300" />
 													</span>
 												{/each}
 											</div>
@@ -451,7 +492,11 @@
 			{:else}
 				<div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
 					{#if filteredTasks.length === 0}
-						<div class="p-8 text-center text-gray-500">No tasks found.</div>
+						<div class="p-8 text-center text-gray-500">
+							No tasks found{projectScope.available && projectScope.id !== ALL_PROJECTS
+								? ' in this project'
+								: ''}.
+						</div>
 					{:else}
 						<ul class="divide-y divide-gray-100">
 							{#each filteredTasks as task}
@@ -466,6 +511,13 @@
 										<div class="min-w-0 flex-1">
 											<p class="truncate text-[15px] font-semibold text-brand-dark">{task.title}</p>
 											<div class="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-gray-500">
+												{#if showProjectTag && task.expand?.project?.name}
+													<span
+														class="shrink-0 rounded bg-brand-light-100 px-1.5 py-0.5 font-medium text-brand-gold-800"
+													>
+														{task.expand.project.name}
+													</span>
+												{/if}
 												{#if task.expand?.department?.name}
 													<span
 														class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600"

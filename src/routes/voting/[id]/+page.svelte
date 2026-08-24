@@ -118,7 +118,7 @@
 />
 
 <div
-	class="flex min-h-screen flex-col items-center justify-center bg-brand-light-100 px-4 py-12 sm:px-6 lg:px-8"
+	class="flex min-h-dvh flex-col items-center justify-center bg-brand-light-100 px-4 py-12 sm:px-6 lg:px-8"
 >
 	<div class="w-full max-w-2xl">
 		<div class="mb-6 flex items-center justify-between">
@@ -165,7 +165,7 @@
 					<div
 						class="mb-4 inline-flex items-center justify-center rounded-full bg-brand-dark-900 p-3"
 					>
-						<Vote class="h-8 w-8 text-brand-gold-700" />
+						<Vote class="h-8 w-8 text-brand-gold-300" />
 					</div>
 					<h1 class="text-3xl font-bold">{poll.title}</h1>
 					{#if poll.description}

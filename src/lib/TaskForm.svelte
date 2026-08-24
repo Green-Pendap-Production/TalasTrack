@@ -2,6 +2,8 @@
 	import { pb, pbError } from '$lib/pocketbase';
 	import { Loader2, Save, Plus, Trash2, Check, Circle, Clock, CheckCircle2 } from 'lucide-svelte';
 	import { onMount, untrack } from 'svelte';
+	import Avatar from '$lib/Avatar.svelte';
+	import { projectScope, defaultProjectId } from '$lib/projects.svelte';
 
 	// task = null -> create, otherwise edit that record.
 	let {
@@ -18,6 +20,9 @@
 	let description = $state(seed.description ?? '');
 	let status = $state(seed.status ?? 'todo');
 	let departmentId = $state(seed.department ?? '');
+	// A new task lands in the project you are currently scoped to, so it does not
+	// vanish from the view you created it in.
+	let projectId = $state(seed.project ?? defaultProjectId());
 	let assigneeIds = $state<string[]>(seed.assignees ?? []);
 	// PocketBase dates come back as "2026-08-23 10:00:00.000Z"; <input type="date"> wants just the day.
 	let dueDate = $state(seed.due_date ? String(seed.due_date).slice(0, 10) : '');
@@ -77,6 +82,8 @@
 			description,
 			status,
 			department: departmentId || null,
+			// Only sent once the relation field exists, so saving still works before setup.
+			...(projectScope.available ? { project: projectId || null } : {}),
 			assignees: assigneeIds,
 			subtasks: subtasks.filter((s) => s.title.trim() !== ''),
 			due_date: dueDate || null
@@ -135,9 +142,25 @@
 
 	<!-- Where it sits and when it is due -->
 	<section class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-		<h2 class="mb-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">Scheduling</h2>
+		<h2 class="mb-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+			Where it belongs
+		</h2>
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			{#if projectScope.available}
+				<div class="sm:col-span-2">
+					<label for="project" class="mb-1.5 block text-sm font-medium text-brand-dark-900">
+						Project
+					</label>
+					<select id="project" bind:value={projectId} class="{FIELD} bg-white">
+						<option value="">No project (company-wide)</option>
+						{#each projectScope.list as p (p.id)}
+							<option value={p.id}>{p.name}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
 			<div>
 				<label for="department" class="mb-1.5 block text-sm font-medium text-brand-dark-900">
 					Department
@@ -208,17 +231,15 @@
 								: 'border-gray-200 text-gray-600 hover:bg-gray-50'
 						}`}
 					>
-						<span
-							class={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-								picked ? 'bg-brand-gold-700 text-white' : 'bg-gray-100 text-gray-500'
-							}`}
-						>
-							{#if picked}
+						{#if picked}
+							<span
+								class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-gold-700 text-white"
+							>
 								<Check class="h-3.5 w-3.5" />
-							{:else}
-								{(u.name || u.email || '?').charAt(0).toUpperCase()}
-							{/if}
-						</span>
+							</span>
+						{:else}
+							<Avatar user={u} size="xs" class="bg-gray-100 text-gray-500" />
+						{/if}
 						{u.name || u.email}
 					</button>
 				{/each}
