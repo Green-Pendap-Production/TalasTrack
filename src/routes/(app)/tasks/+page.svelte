@@ -5,6 +5,7 @@
 	import Avatar from '$lib/Avatar.svelte';
 	import { projectScope, projectName } from '$lib/projects.svelte';
 	import { inScope, ALL_PROJECTS, NO_PROJECT } from '$lib/projects';
+	import { exportCsv, exportPdf, isOverdue } from '$lib/taskExport';
 	import {
 		Plus,
 		Search,
@@ -14,7 +15,9 @@
 		LayoutGrid,
 		List,
 		CalendarRange,
-		AlertTriangle
+		AlertTriangle,
+		FileDown,
+		FileSpreadsheet
 	} from 'lucide-svelte';
 
 	const COLUMNS = [
@@ -112,12 +115,33 @@
 			.filter((b) => b.visible)
 	);
 
-	function isOverdue(task: any) {
-		return (
-			!!task.due_date &&
-			task.status !== 'done' &&
-			new Date(task.due_date) < new Date(new Date().toDateString())
-		);
+	// What the export header should say it was filtered by - the same state the
+	// list itself reads, so the file can never disagree with the screen.
+	let filterSummary = $derived(
+		[
+			statusFilter !== 'all' ? `Status: ${getStatusLabel(statusFilter)}` : '',
+			departmentFilter === 'all'
+				? ''
+				: `Department: ${departmentFilter === 'none' ? 'None' : departments.find((d) => d.id === departmentFilter)?.name || ''}`,
+			mineOnly ? 'Assigned to me' : '',
+			searchQuery ? `Search: "${searchQuery}"` : ''
+		]
+			.filter(Boolean)
+			.join(' · ') || 'No filters'
+	);
+
+	function exportTasks(kind: 'pdf' | 'excel') {
+		const scope =
+			!projectScope.available || projectScope.id === ALL_PROJECTS
+				? 'All projects'
+				: projectScope.id === NO_PROJECT
+					? 'No project'
+					: projectName(projectScope.id);
+		if (kind === 'excel') {
+			exportCsv(filteredTasks, `tasks-${new Date().toISOString().slice(0, 10)}`);
+		} else if (!exportPdf(filteredTasks, { title: 'Task Report', scope, filters: filterSummary })) {
+			error = 'The PDF opens in a new tab - allow pop-ups for this site and try again.';
+		}
 	}
 
 	// Drag a card to another column to change its status. HTML5 DnD, no library.
@@ -306,6 +330,24 @@
 						<option value="done">Completed</option>
 					</select>
 				{/if}
+
+				<!-- Exports take `filteredTasks`, so the file matches the screen. -->
+				<div class="inline-flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200">
+					<button
+						onclick={() => exportTasks('pdf')}
+						title="Export the filtered tasks as PDF"
+						class="inline-flex items-center gap-1.5 px-3 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+					>
+						<FileDown class="h-4 w-4" /> PDF
+					</button>
+					<button
+						onclick={() => exportTasks('excel')}
+						title="Export the filtered tasks for Excel"
+						class="inline-flex items-center gap-1.5 border-l border-gray-200 px-3 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+					>
+						<FileSpreadsheet class="h-4 w-4" /> Excel
+					</button>
+				</div>
 			</div>
 
 			{#if loading}
